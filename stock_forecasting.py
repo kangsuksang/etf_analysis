@@ -8,7 +8,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 # Set page config
-st.set_page_config(page_title="Stock Analysis Dashboard", layout="wide", page_icon=":material/stock:")
+st.set_page_config(page_title="Stock Analysis Dashboard", layout="wide", page_icon="🚀")
 
 # Custom CSS to improve the look
 st.markdown("""
