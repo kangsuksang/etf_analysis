@@ -46,7 +46,6 @@ popular_tickers = {
     "AMZN": "Amazon.com Inc.",
     "GOOGL": "Alphabet Inc. (Google)",
     "META": "Meta Platforms Inc. (Facebook)",
-    "TSLA": "Tesla Inc.",
     "BRK.A": "Berkshire Hathaway Inc.",
     "JPM": "JPMorgan Chase & Co.",
     "JNJ": "Johnson & Johnson",
@@ -60,7 +59,8 @@ popular_tickers = {
     "BAC": "Bank of America Corporation",
     "ADBE": "Adobe Inc.",
     "NFLX": "Netflix Inc.",
-    "XOM": "Exxon Mobil Corporation"
+    "XOM": "Exxon Mobil Corporation",
+    "CVX": "Chevron Corporation"
 }
 
 # Utility functions
