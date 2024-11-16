@@ -55,7 +55,8 @@ popular_tickers = {
     "IONQ": "IonQ Inc.",
     "MSTR": "MicroStrategy Incorporated",
     "COIN": "Coinbase Global Inc.",
-    "COST": "Costco Wholesale Corporation"
+    "COST": "Costco Wholesale Corporation",
+    "PLTR": "Palantir Technologies Inc."
 }
 
 # Utility functions
@@ -220,12 +221,37 @@ def create_merged_signal_visualization(signal_summary):
 
     return fig
 
+# Define the calculate_rsi function globally
+def calculate_rsi(prices, window=14):
+    delta = prices.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+# Define the calculate_macd function
+def calculate_macd(prices, short_window=12, long_window=26, signal_window=9):
+    short_ema = prices.ewm(span=short_window, adjust=False).mean()
+    long_ema = prices.ewm(span=long_window, adjust=False).mean()
+    macd = short_ema - long_ema
+    signal_line = macd.ewm(span=signal_window, adjust=False).mean()
+    return macd, signal_line
+
+# Calculate Bollinger Bands
+def calculate_bollinger_bands(prices, window=20, num_std=2):
+    rolling_mean = prices.rolling(window=window).mean()
+    rolling_std = prices.rolling(window=window).std()
+    upper_band = rolling_mean + (rolling_std * num_std)
+    lower_band = rolling_mean - (rolling_std * num_std)
+    return upper_band, lower_band
+                        
 # Main app
 def main():
     st.title('📊 Stock Analysis Dashboard')
 
     st.subheader('Stock Selection')
-    st.text("Select a stock from the options below or enter a custom ticker. Left column is for custom ticker entry, right column is for popular stock selection.")
+    st.text("Select a stock from the options below or enter a custom ticker. Left column is for custom ticker entry, right column is for popular stock selection. Left selection supercedes Right")
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -260,7 +286,43 @@ def main():
         sp_500 = fetch_sp_500()
         sp_option = st.selectbox(
             'Choose from S&P 500:',
-            [''] + ['A', 'AAL', 'AAP', 'AAPL', 'ABBV', 'ABC', 'ABMD', 'ABT', 'ACN', 'ADBE', 'ADI', 'ADM', 'ADP', 'ADSK', 'AEE', 'AEP', 'AES', 'AFL', 'AIG', 'AIZ', 'AJG', 'AKAM', 'ALB', 'ALGN', 'ALK', 'ALL', 'ALLE', 'AMAT', 'AMCR', 'AMD', 'AME', 'AMGN', 'AMP', 'AMT', 'AMZN', 'ANET', 'ANSS', 'ANTM', 'AON', 'AOS', 'APA', 'APD', 'APH', 'APTV', 'ARE', 'ATO', 'ATVI', 'AVB', 'AVGO', 'AVY', 'AWK', 'AXP', 'AZO', 'BA', 'BAC', 'BAX', 'BBWI', 'BBY', 'BDX', 'BEN', 'BF.B', 'BIIB', 'BIO', 'BK', 'BKNG', 'BKR', 'BLK', 'BLL', 'BMY', 'BR', 'BRK.B', 'BRO', 'BSX', 'BWA', 'BXP', 'C', 'CAG', 'CAH', 'CARR', 'CAT', 'CB', 'CBOE', 'CBRE', 'CCI', 'CCL', 'CDNS', 'CDW', 'CE', 'CERN', 'CF', 'CFG', 'CHD', 'CHRW', 'CHTR', 'CI', 'CINF', 'CL', 'CLX', 'CMA', 'CMCSA', 'CME', 'CMG', 'CMI', 'CMS', 'CNC', 'CNP', 'COF', 'COO', 'COP', 'COST', 'CPB', 'CPRT', 'CRL', 'CRM', 'CSCO', 'CSX', 'CTAS', 'CTLT', 'CTRA', 'CTSH', 'CTVA', 'CTXS', 'CVS', 'CVX', 'CZR', 'D', 'DAL', 'DD', 'DE', 'DFS', 'DG', 'DGX', 'DHI', 'DHR', 'DIS', 'DISCA', 'DISCK', 'DISH', 'DLR', 'DLTR', 'DOV', 'DOW', 'DPZ', 'DRE', 'DRI', 'DTE', 'DUK', 'DVA', 'DVN', 'DXC', 'DXCM', 'EA', 'EBAY', 'ECL', 'ED', 'EFX', 'EIX', 'EL', 'EMN', 'EMR', 'ENPH', 'EOG', 'EQIX', 'EQR', 'ES', 'ESS', 'ETN', 'ETR', 'ETSY', 'EVRG', 'EW', 'EXC', 'EXPD', 'EXPE', 'EXR', 'F', 'FANG', 'FAST', 'FB', 'FBHS', 'FCX', 'FDX', 'FE', 'FFIV', 'FIS', 'FISV', 'FITB', 'FLT', 'FMC', 'FOX', 'FOXA', 'FRC', 'FRT', 'FTNT', 'FTV', 'GD', 'GE', 'GILD', 'GIS', 'GL', 'GLW', 'GM', 'GNRC', 'GOOG', 'GOOGL', 'GPC', 'GPN', 'GPS', 'GRMN', 'GS', 'GWW', 'HAL', 'HAS', 'HBAN', 'HBI', 'HCA', 'HD', 'HES', 'HIG', 'HII', 'HLT', 'HOLX', 'HON', 'HPE', 'HPQ', 'HRL', 'HSIC', 'HST', 'HSY', 'HUM', 'HWM', 'IBM', 'ICE', 'IDXX', 'IEX', 'IFF', 'ILMN', 'INCY', 'INFO', 'INTC', 'INTU', 'IP', 'IPG', 'IPGP', 'IQV', 'IR', 'IRM', 'ISRG', 'IT', 'ITW', 'IVZ', 'J', 'JBHT', 'JCI', 'JKHY', 'JNJ', 'JNPR', 'JPM', 'K', 'KEY', 'KEYS', 'KHC', 'KIM', 'KLAC', 'KMB', 'KMI', 'KMX', 'KO', 'KR', 'KSU', 'L', 'LDOS', 'LEG', 'LEN', 'LH', 'LHX', 'LIN', 'LKQ', 'LLY', 'LMT', 'LNC', 'LNT', 'LOW', 'LRCX', 'LUMN', 'LUV', 'LVS', 'LW', 'LYB', 'LYV', 'MA', 'MAA', 'MAR', 'MAS', 'MCD', 'MCHP', 'MCK', 'MCO', 'MDLZ', 'MDT', 'MET', 'MGM', 'MHK', 'MKC', 'MKTX', 'MLM', 'MMC', 'MMM', 'MNST', 'MO', 'MOS', 'MPC', 'MPWR', 'MRK', 'MRO', 'MS', 'MSCI', 'MSFT', 'MSI', 'MTB', 'MTD', 'MU', 'NCLH', 'NDAQ', 'NEE', 'NEM', 'NFLX', 'NI', 'NKE', 'NLOK', 'NLSN', 'NOC', 'NOW', 'NRG', 'NSC', 'NTAP', 'NTRS', 'NUE', 'NVDA', 'NVR', 'NWL', 'NWS', 'NWSA', 'NXPI', 'O', 'ODFL', 'OGN', 'OKE', 'OMC', 'ORCL', 'ORLY', 'OTIS', 'OXY', 'PAYC', 'PAYX', 'PBCT', 'PCAR', 'PEAK', 'PEG', 'PENN', 'PEP', 'PFE', 'PFG', 'PG', 'PGR', 'PH', 'PHM', 'PKG', 'PKI', 'PLD', 'PM', 'PNC', 'PNR', 'PNW', 'POOL', 'PPG', 'PPL', 'PRGO', 'PRU', 'PSA', 'PSX', 'PTC', 'PVH', 'PWR', 'PXD', 'PYPL', 'QCOM', 'QRVO', 'RCL', 'RE', 'REG', 'REGN', 'RF', 'RHI', 'RJF', 'RL', 'RMD', 'ROK', 'ROL', 'ROP', 'ROST', 'RSG', 'RTX', 'SBAC', 'SBUX', 'SCHW', 'SEE', 'SHW', 'SIVB', 'SJM', 'SLB', 'SNA', 'SNPS', 'SO', 'SPG', 'SPGI', 'SRE', 'STE', 'STT', 'STX', 'STZ', 'SWK', 'SWKS', 'SYF', 'SYK', 'SYY', 'T', 'TAP', 'TDG', 'TDY', 'TEL', 'TER', 'TFC', 'TFX', 'TGT', 'TJX', 'TMO', 'TMUS', 'TPR', 'TRMB', 'TROW', 'TRV', 'TSCO', 'TSLA', 'TSN', 'TT', 'TTWO', 'TWTR', 'TXN', 'TXT', 'TYL', 'UA', 'UAA', 'UAL', 'UDR', 'UHS', 'ULTA', 'UNH', 'UNP', 'UPS', 'URI', 'USB', 'V', 'VFC', 'VIAC', 'VLO', 'VMC', 'VNO', 'VRSK', 'VRSN', 'VRTX', 'VTR', 'VTRS', 'VZ', 'WAB', 'WAT', 'WBA', 'WDC', 'WEC', 'WELL', 'WFC', 'WHR', 'WLTW', 'WM', 'WMB', 'WMT', 'WRB', 'WRK', 'WST', 'WU', 'WY', 'WYNN', 'XEL', 'XLNX', 'XOM', 'XRAY', 'XYL', 'YUM', 'ZBH', 'ZBRA', 'ZION', 'ZTS'],
+            [''] + [
+                'A', 'AAL', 'AAP', 'AAPL', 'ABBV', 'ABC', 'ABMD', 'ABT', 'ACN', 'ADBE', 'ADI', 'ADM', 'ADP', 
+                'ADSK', 'AEE', 'AEP', 'AES', 'AFL', 'AIG', 'AIZ', 'AJG', 'AKAM', 'ALB', 'ALGN', 'ALK', 'ALL', 
+                'ALLE', 'AMAT', 'AMCR', 'AMD', 'AME', 'AMGN', 'AMP', 'AMT', 'AMZN', 'ANET', 'ANSS', 'ANTM', 'AON', 
+                'AOS', 'APA', 'APD', 'APH', 'APTV', 'ARE', 'ATO', 'ATVI', 'AVB', 'AVGO', 'AVY', 'AWK', 'AXP', 'AZO', 
+                'BA', 'BAC', 'BAX', 'BBWI', 'BBY', 'BDX', 'BEN', 'BF.B', 'BIIB', 'BIO', 'BK', 'BKNG', 'BKR', 'BLK', 
+                'BLL', 'BMY', 'BR', 'BRK.B', 'BRO', 'BSX', 'BWA', 'BXP', 'C', 'CAG', 'CAH', 'CARR', 'CAT', 'CB', 
+                'CBOE', 'CBRE', 'CCI', 'CCL', 'CDNS', 'CDW', 'CE', 'CERN', 'CF', 'CFG', 'CHD', 'CHRW', 'CHTR', 'CI', 
+                'CINF', 'CL', 'CLX', 'CMA', 'CMCSA', 'CME', 'CMG', 'CMI', 'CMS', 'CNC', 'CNP', 'COF', 'COO', 'COP', 
+                'COST', 'CPB', 'CPRT', 'CRL', 'CRM', 'CSCO', 'CSX', 'CTAS', 'CTLT', 'CTRA', 'CTSH', 'CTVA', 'CTXS', 
+                'CVS', 'CVX', 'CZR', 'D', 'DAL', 'DD', 'DE', 'DFS', 'DG', 'DGX', 'DHI', 'DHR', 'DIS', 'DISCA', 'DISCK', 
+                'DISH', 'DLR', 'DLTR', 'DOV', 'DOW', 'DPZ', 'DRE', 'DRI', 'DTE', 'DUK', 'DVA', 'DVN', 'DXC', 'DXCM', 
+                'EA', 'EBAY', 'ECL', 'ED', 'EFX', 'EIX', 'EL', 'EMN', 'EMR', 'ENPH', 'EOG', 'EQIX', 'EQR', 'ES', 
+                'ESS', 'ETN', 'ETR', 'ETSY', 'EVRG', 'EW', 'EXC', 'EXPD', 'EXPE', 'EXR', 'F', 'FANG', 'FAST', 'FB', 
+                'FBHS', 'FCX', 'FDX', 'FE', 'FFIV', 'FIS', 'FISV', 'FITB', 'FLT', 'FMC', 'FOX', 'FOXA', 'FRC', 'FRT', 
+                'FTNT', 'FTV', 'GD', 'GE', 'GILD', 'GIS', 'GL', 'GLW', 'GM', 'GNRC', 'GOOG', 'GOOGL', 'GPC', 'GPN', 
+                'GPS', 'GRMN', 'GS', 'GWW', 'HAL', 'HAS', 'HBAN', 'HBI', 'HCA', 'HD', 'HES', 'HIG', 'HII', 'HLT', 
+                'HOLX', 'HON', 'HPE', 'HPQ', 'HRL', 'HSIC', 'HST', 'HSY', 'HUM', 'HWM', 'IBM', 'ICE', 'IDXX', 'IEX', 
+                'IFF', 'ILMN', 'INCY', 'INFO', 'INTC', 'INTU', 'IP', 'IPG', 'IPGP', 'IQV', 'IR', 'IRM', 'ISRG', 'IT', 
+                'ITW', 'IVZ', 'J', 'JBHT', 'JCI', 'JKHY', 'JNJ', 'JNPR', 'JPM', 'K', 'KEY', 'KEYS', 'KHC', 'KIM', 'KLAC', 
+                'KMB', 'KMI', 'KMX', 'KO', 'KR', 'KSU', 'L', 'LDOS', 'LEG', 'LEN', 'LH', 'LHX', 'LIN', 'LKQ', 'LLY', 'LMT', 
+                'LNC', 'LNT', 'LOW', 'LRCX', 'LUMN', 'LUV', 'LVS', 'LW', 'LYB', 'LYV', 'MA', 'MAA', 'MAR', 'MAS', 'MCD', 
+                'MCHP', 'MCK', 'MCO', 'MDLZ', 'MDT', 'MET', 'MGM', 'MHK', 'MKC', 'MKTX', 'MLM', 'MMC', 'MMM', 'MNST', 'MO', 
+                'MOS', 'MPC', 'MPWR', 'MRK', 'MRO', 'MS', 'MSCI', 'MSFT', 'MSI', 'MTB', 'MTD', 'MU', 'NCLH', 'NDAQ', 'NEE', 
+                'NEM', 'NFLX', 'NI', 'NKE', 'NLOK', 'NLSN', 'NOC', 'NOW', 'NRG', 'NSC', 'NTAP', 'NTRS', 'NUE', 'NVDA', 'NVR', 
+                'NWL', 'NWS', 'NWSA', 'NXPI', 'O', 'ODFL', 'OGN', 'OKE', 'OMC', 'ORCL', 'ORLY', 'OTIS', 'OXY', 'PAYC', 'PAYX', 
+                'PBCT', 'PCAR', 'PEAK', 'PEG', 'PENN', 'PEP', 'PFE', 'PFG', 'PG', 'PGR', 'PH', 'PHM', 'PKG', 'PKI', 'PLD', 
+                'PM', 'PNC', 'PNR', 'PNW', 'POOL', 'PPG', 'PPL', 'PRGO', 'PRU', 'PSA', 'PSX', 'PTC', 'PVH', 'PWR', 'PXD', 
+                'PYPL', 'QCOM', 'QRVO', 'RCL', 'RE', 'REG', 'REGN', 'RF', 'RHI', 'RJF', 'RL', 'RMD', 'ROK', 'ROL', 'ROP', 
+                'ROST', 'RSG', 'RTX', 'SBAC', 'SBUX', 'SCHW', 'SEE', 'SHW', 'SIVB', 'SJM', 'SLB', 'SNA', 'SNPS', 'SO', 'SPG', 
+                'SPGI', 'SRE', 'STE', 'STT', 'STX', 'STZ', 'SWK', 'SWKS', 'SYF', 'SYK', 'SYY', 'T', 'TAP', 'TDG', 'TDY', 
+                'TEL', 'TER', 'TFC', 'TFX', 'TGT', 'TJX', 'TMO', 'TMUS', 'TPR', 'TRMB', 'TROW', 'TRV', 'TSCO', 'TSLA', 'TSN', 
+                'TT', 'TTWO', 'TWTR', 'TXN', 'TXT', 'TYL', 'UA', 'UAA', 'UAL', 'UDR', 'UHS', 'ULTA', 'UNH', 'UNP', 'UPS', 
+                'URI', 'USB', 'V', 'VFC', 'VIAC', 'VLO', 'VMC', 'VNO', 'VRSK', 'VRSN', 'VRTX', 'VTR', 'VTRS', 'VZ', 'WAB', 
+                'WAT', 'WBA', 'WDC', 'WEC', 'WELL', 'WFC', 'WHR', 'WLTW', 'WM', 'WMB', 'WMT', 'WRB', 'WRK', 'WST', 'WU', 
+                'WY', 'WYNN', 'XEL', 'XLNX', 'XOM', 'XRAY', 'XYL', 'YUM', 'ZBH', 'ZBRA', 'ZION', 'ZTS'
+            ],
             format_func=lambda x: x if x else "Select from S&P 500"
         )
 
@@ -276,24 +338,46 @@ def main():
 
     info = get_stock_info(ticker)
 
-    st.write(f"**Selected Stock: {info.get('longName', 'N/A')}** ({ticker})")
-    st.write(f"Current Price: ${info.get('currentPrice', 'N/A')} | 52 Week Range: ${info.get('fiftyTwoWeekLow', 'N/A')} - ${info.get('fiftyTwoWeekHigh', 'N/A')}")
+    
     
     # Create columns for current price and 52-week range chart
-    price_col, chart_col = st.columns([1, 3])
+    price_col, chart_col = st.columns([1, 3], gap="small")
+    with price_col:
+        #st.markdown("---")
+        st.write(f"**Selected Stock: {info.get('longName', 'N/A')}** ({ticker})")
+        st.write(f"52 Week Range: ${info.get('fiftyTwoWeekLow', 'N/A')} - ${info.get('fiftyTwoWeekHigh', 'N/A')}")
+        #st.write("Price")
+    with chart_col:
+        #st.markdown("---")
+        st.write("Price Chart")
 
     with price_col:
         st.write(f"Current Price: ${info.get('currentPrice', 'N/A')}")
-        st.write(f"52 Week Range: ${info.get('fiftyTwoWeekLow', 'N/A')} - ${info.get('fiftyTwoWeekHigh', 'N/A')}")
+        #st.write(f"52 Week Range: ${info.get('fiftyTwoWeekLow', 'N/A')} - ${info.get('fiftyTwoWeekHigh', 'N/A')}")
 
         # Add real-time stock price
         real_time_price = yf.Ticker(ticker).info.get('currentPrice', 'N/A')
+        
+        # Calculate and display the current RSI
+        df = pd.DataFrame({'Close': [1, 2, 3, 4, 5]})
+        rsi = calculate_rsi(df['Close'])
+        current_rsi = rsi.iloc[-1]
+        st.write(f"Current RSI: {current_rsi:.2f}")
+        
+        try:
+            current_eps = float(info.get('trailingEps', 'N/A'))
+            st.write(f"Current EPS: ${current_eps:.2f}")
+        except ValueError:
+            st.write("Current EPS: N/A")
+        
         # Check if real_time_price is available and valid
         if real_time_price != 'N/A' and real_time_price is not None:
             st.write(f"Real-time Price: ${real_time_price:.2f}")
+            #st.markdown("---")
         else:
             st.write("Real-time Price: Not available")
             st.write("Possible reasons: Market closed, API issue, or invalid ticker symbol")
+            #st.markdown("---")
 
     with chart_col:
         # Create a line chart with 52-week range and current price
@@ -339,15 +423,24 @@ def main():
                                  showarrow=False, yshift=30, font=dict(size=14, color='red'))
 
         # Display the chart
-        st.plotly_chart(fig_range, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_range, use_container_width=True, config={'displayModeBar': False, 'margin': {'b': '0'}})
         fig_range.update_layout(margin=dict(b=0))
+        fig_range.add_trace(go.Scatter(
+            x=[info.get('fiftyTwoWeekLow', 0), info.get('fiftyTwoWeekHigh', 0)],
+            y=['Price Range', 'Price Range'],
+            mode='lines',
+            line=dict(color='black', width=1),
+            name='Line Separator'
+        ))
+                        
+        st.markdown("---")  # Add a horizontal line for emphasis
         
     # Create two columns for time range selection and plot
     time_range_col, plot_col = st.columns([1, 3])
 
     with time_range_col:
         # Add time range selection
-        time_ranges = ['max', '10y', '5y', '3y', '1y', '6mo', '3mo', '1mo', '5d', '1d']
+        time_ranges = ['max', '10y', '5y', '3y', '1y', 'ytd', '6mo', '3mo', '1mo', '5d']
         st.write("Select Time Range:")
         selected_range = None
         col1, col2 = st.columns(2)
@@ -398,6 +491,8 @@ def main():
 
         # Display the chart
         st.plotly_chart(fig_hist, use_container_width=True)
+                
+        st.markdown("---")  # Add a horizontal line for emphasis
 
     main_col1, main_col2 = st.columns([1, 3])
 
@@ -407,13 +502,42 @@ def main():
                         ["Stock Info", "Stock Performance", "Stock Backtesting", "Forecasting", "Technical Analysis"])
 
         st.subheader('Company Info')
+        ceo_name = info.get('CEO', 'N/A')
+        if ceo_name != 'N/A':
+            st.write(f"CEO: {ceo_name}")
+        founded_year = info.get('founded', 'N/A')
+        if founded_year != 'N/A':
+            st.write(f"Founded Year: {founded_year}")
+            
         st.write(f"Sector: {info.get('sector', 'N/A')}")
         st.write(f"Industry: {info.get('industry', 'N/A')}")
+
+        try:
+            st.write(f"Number of Employees: {info.get('fullTimeEmployees', 'N/A'):,}" if isinstance(info.get('fullTimeEmployees'), (int, float)) else "Number of Employees: N/A")
+        except Exception as e:
+            st.write(f"Number of Employees: Error - {str(e)}")
+
+        try:
+            st.write(f"Headquarters: {info.get('city', 'N/A')}, {info.get('state', 'N/A')}, {info.get('country', 'N/A')}")
+        except Exception as e:
+            st.write(f"Headquarters: Error - {str(e)}")
+            
         market_cap = info.get('marketCap', 'N/A')
         if isinstance(market_cap, (int, float)):
             st.write(f"Market Cap: ${market_cap:,.2f}")
         else:
             st.write(f"Market Cap: {market_cap}")
+            
+        try:
+            st.write(f"EBITA: ${info.get('ebitda', 'N/A'):,.2f}" if isinstance(info.get('ebitda'), (int, float)) else "EBITA: N/A")
+        except Exception as e:
+            st.write(f"EBITA: Error - {str(e)}")
+            
+        try:
+            st.write(f"Shares Outstanding: {info.get('sharesOutstanding', 'N/A'):,}" if isinstance(info.get('sharesOutstanding'), (int, float)) else "Shares Outstanding: N/A")
+        except Exception as e:
+            st.write(f"Shares Outstanding: Error - {str(e)}")
+                
         try:
             st.write(f"P/E Ratio: {info.get('trailingPE', 'N/A'):.2f}" if isinstance(info.get('trailingPE'), (int, float)) else "P/E Ratio: N/A")
         except Exception as e:
@@ -443,6 +567,18 @@ def main():
             st.write(f"EPS (TTM): ${info.get('trailingEps', 'N/A'):.2f}" if isinstance(info.get('trailingEps'), (int, float)) else "EPS (TTM): N/A")
         except Exception as e:
             st.write(f"EPS (TTM): Error - {str(e)}")
+            
+
+            
+        try:
+            st.write(f"Trailing P/E: {info.get('trailingPE', 'N/A'):.2f}" if isinstance(info.get('trailingPE'), (int, float)) else "Trailing P/E: N/A")
+        except Exception as e:
+            st.write(f"Trailing P/E: Error - {str(e)}")
+
+        try:
+            st.write(f"Forward P/E: {info.get('forwardPE', 'N/A'):.2f}" if isinstance(info.get('forwardPE'), (int, float)) else "Forward P/E: N/A")
+        except Exception as e:
+            st.write(f"Forward P/E: Error - {str(e)}")
 
         try:
             st.write(f"Price to Book: {info.get('priceToBook', 'N/A'):.2f}" if isinstance(info.get('priceToBook'), (int, float)) else "Price to Book: N/A")
@@ -455,19 +591,14 @@ def main():
             st.write(f"Debt to Equity: Error - {str(e)}")
 
         try:
-            st.write(f"Shares Outstanding: {info.get('sharesOutstanding', 'N/A'):,}" if isinstance(info.get('sharesOutstanding'), (int, float)) else "Shares Outstanding: N/A")
+            st.write(f"Enterprise Value/Revenue: {info.get('enterpriseToRevenue', 'N/A'):.2f}" if isinstance(info.get('enterpriseToRevenue'), (int, float)) else "Enterprise Value/Revenue: N/A")
         except Exception as e:
-            st.write(f"Shares Outstanding: Error - {str(e)}")
-
+            st.write(f"Enterprise Value/Revenue: Error - {str(e)}")
+            
         try:
-            st.write(f"Number of Employees: {info.get('fullTimeEmployees', 'N/A'):,}" if isinstance(info.get('fullTimeEmployees'), (int, float)) else "Number of Employees: N/A")
+            st.write(f"Enterprise Value/EBITDA: {info.get('enterpriseToEbitda', 'N/A'):.2f}" if isinstance(info.get('enterpriseToEbitda'), (int, float)) else "Enterprise Value/EBITDA: N/A")
         except Exception as e:
-            st.write(f"Number of Employees: Error - {str(e)}")
-
-        try:
-            st.write(f"Headquarters: {info.get('city', 'N/A')}, {info.get('state', 'N/A')}, {info.get('country', 'N/A')}")
-        except Exception as e:
-            st.write(f"Headquarters: Error - {str(e)}")
+            st.write(f"Enterprise Value/EBITDA: Error - {str(e)}")
 
     with main_col2:
         if page == "Stock Info":
@@ -595,6 +726,7 @@ def main():
                 trend_col3.plotly_chart(fig_dividend_trend, use_container_width=True)
             else:
                 trend_col3.write("Dividend data not available for this stock.")
+            st.markdown("---")  # Add a horizontal line for emphasis
                 
             # Add latest news about the company
             st.subheader("Latest News")
@@ -789,38 +921,12 @@ def main():
                         st.subheader("Trade Signals")
                         
                         # Calculate additional signals
-                        # Define the calculate_rsi function
-                        def calculate_rsi(prices, window=14):
-                            delta = prices.diff()
-                            gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-                            loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-                            rs = gain / loss
-                            rsi = 100 - (100 / (1 + rs))
-                            return rsi
-                        
                         signals['RSI'] = calculate_rsi(df['Close'])
-                        # Define the calculate_macd function
-                        def calculate_macd(prices, short_window=12, long_window=26, signal_window=9):
-                            short_ema = prices.ewm(span=short_window, adjust=False).mean()
-                            long_ema = prices.ewm(span=long_window, adjust=False).mean()
-                            macd = short_ema - long_ema
-                            signal_line = macd.ewm(span=signal_window, adjust=False).mean()
-                            return macd, signal_line
-
                         signals['MACD'], signals['Signal_Line'] = calculate_macd(df['Close'])
-                        # Calculate Bollinger Bands
-                        def calculate_bollinger_bands(prices, window=20, num_std=2):
-                            rolling_mean = prices.rolling(window=window).mean()
-                            rolling_std = prices.rolling(window=window).std()
-                            upper_band = rolling_mean + (rolling_std * num_std)
-                            lower_band = rolling_mean - (rolling_std * num_std)
-                            return upper_band, lower_band
-
                         signals['Bollinger_Upper'], signals['Bollinger_Lower'] = calculate_bollinger_bands(df['Close'])
                         
                         # Add signal interpretations
                         import numpy as np
-
                         signals['RSI_Signal'] = np.where(signals['RSI'] > 70, 'Overbought', np.where(signals['RSI'] < 30, 'Oversold', 'Neutral'))
                         signals['MACD_Signal'] = np.where(signals['MACD'] > signals['Signal_Line'], 'Bullish', 'Bearish')
                         signals['Bollinger_Signal'] = np.where(signals['Close'] > signals['Bollinger_Upper'], 'Overbought', 
