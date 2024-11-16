@@ -8,7 +8,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 # Set page config
-st.set_page_config(page_title="Stock Analysis Dashboard", layout="wide")
+st.set_page_config(page_title="Stock Analysis Dashboard", layout="wide", page_icon=":material/stock:")
 
 # Custom CSS to improve the look
 st.markdown("""
@@ -47,20 +47,15 @@ popular_tickers = {
     "GOOGL": "Alphabet Inc. (Google)",
     "META": "Meta Platforms Inc. (Facebook)",
     "BRK.A": "Berkshire Hathaway Inc.",
-    "JPM": "JPMorgan Chase & Co.",
-    "JNJ": "Johnson & Johnson",
-    "V": "Visa Inc.",
-    "PG": "Procter & Gamble Company",
-    "UNH": "UnitedHealth Group Incorporated",
-    "MA": "Mastercard Incorporated",
     "NVDA": "NVIDIA Corporation",
-    "HD": "The Home Depot Inc.",
-    "DIS": "The Walt Disney Company",
-    "BAC": "Bank of America Corporation",
     "ADBE": "Adobe Inc.",
     "NFLX": "Netflix Inc.",
     "XOM": "Exxon Mobil Corporation",
-    "CVX": "Chevron Corporation"
+    "CVX": "Chevron Corporation",
+    "IONQ": "IonQ Inc.",
+    "MSTR": "MicroStrategy Incorporated",
+    "COIN": "Coinbase Global Inc.",
+    "COST": "Costco Wholesale Corporation"
 }
 
 # Utility functions
@@ -230,6 +225,7 @@ def main():
     st.title('📊 Stock Analysis Dashboard')
 
     st.subheader('Stock Selection')
+    st.text("Select a stock from the options below or enter a custom ticker. Left column is for custom ticker entry, right column is for popular stock selection.")
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
