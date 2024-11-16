@@ -337,8 +337,6 @@ def main():
     st.markdown("---")  # Add a horizontal line for emphasis
 
     info = get_stock_info(ticker)
-
-    
     
     # Create columns for current price and 52-week range chart
     price_col, chart_col = st.columns([1, 3], gap="small")
@@ -362,7 +360,8 @@ def main():
         df = pd.DataFrame({'Close': [1, 2, 3, 4, 5]})
         rsi = calculate_rsi(df['Close'])
         current_rsi = rsi.iloc[-1]
-        st.write(f"Current RSI: {current_rsi:.2f}")
+        if current_rsi >= 0:
+            st.write(f"Current RSI: {current_rsi:.2f}")
         
         try:
             current_eps = float(info.get('trailingEps', 'N/A'))
@@ -492,7 +491,7 @@ def main():
         # Display the chart
         st.plotly_chart(fig_hist, use_container_width=True)
                 
-        st.markdown("---")  # Add a horizontal line for emphasis
+        st.markdown("--------")  # Add a horizontal line for emphasis
 
     main_col1, main_col2 = st.columns([1, 3])
 
@@ -737,12 +736,15 @@ def main():
                         col1, col2 = st.columns([1, 3])
                         with col1:
                             if 'thumbnail' in article and article['thumbnail']:
-                                st.image(article['thumbnail']['resolutions'][0]['url'], width=100)
+                                st.image(article['thumbnail']['resolutions'][0]['url'], width=300)
                             else:
-                                st.image("https://via.placeholder.com/100x100.png?text=No+Image", width=100)
+                                st.image("https://via.placeholder.com/100x100.png?text=No+Image", width=300)
                         with col2:
                             st.write(f"**{article['title']}**")
                             st.write(f"*{article['publisher']}* - {article['providerPublishTime']}")
+                            # Safely access the 'summary' key
+                            summary = article.get('summary', '')  # Provide a default message if 'summary' is not found
+                            st.write(summary)
                             st.write(article['link'])
                         if i < 4:  # Add a separator between articles, except after the last one
                             st.markdown("---")
