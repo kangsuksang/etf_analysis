@@ -732,7 +732,7 @@ def main():
             try:
                 news = yf.Ticker(ticker).news
                 if news:
-                    for i, article in enumerate(news[:5]):  # Display up to 5 latest news articles
+                    for i, article in enumerate(news[:10]):  # Display up to 5 latest news articles
                         col1, col2 = st.columns([1, 3])
                         with col1:
                             if 'thumbnail' in article and article['thumbnail']:
@@ -746,7 +746,7 @@ def main():
                             summary = article.get('summary', '')  # Provide a default message if 'summary' is not found
                             st.write(summary)
                             st.write(article['link'])
-                        if i < 4:  # Add a separator between articles, except after the last one
+                        if i < 9:  # Add a separator between articles, except after the last one
                             st.markdown("---")
                 else:
                     st.write("No recent news available for this company.")
@@ -758,7 +758,7 @@ def main():
             
             date_col1, date_col2 = st.columns(2)
             with date_col1:
-                start_date = st.date_input('Start Date', datetime.now() - timedelta(days=365))
+                start_date = st.date_input('Start Date', datetime.now() - timedelta(days=365*5))
             with date_col2:
                 end_date = st.date_input('End Date', datetime.now())
 
@@ -785,10 +785,12 @@ def main():
                 df['RSI'] = 100 - (100 / (1 + rs))
 
                 # Create subplot with shared x-axis
-                fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.7, 0.3])
+                fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.5, 0.3, 0.2])
 
                 # Add candlestick trace to first subplot
                 fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='Price'), row=1, col=1)
+                # Add MA200 trace to first subplot
+                fig.add_trace(go.Scatter(x=df.index, y=df['Close'].rolling(window=200).mean(), mode='lines', name='MA200'), row=1, col=1)
 
                 # Add RSI trace to second subplot
                 fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI'), row=2, col=1)
@@ -805,13 +807,12 @@ def main():
                     xaxis_rangeslider_visible=False,
                     height=600
                 )
-
+                
+                fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', marker_color='darkblue'), row=3, col=1)
+                fig.update_layout(title='Price, RSI, and Volume Chart', xaxis_title='Date', yaxis_title='Price', yaxis2_title='RSI', yaxis3_title='Volume', legend_title_text='Legend')
                 st.plotly_chart(fig, use_container_width=True)
-
-                st.subheader('Volume Chart')
-                fig = go.Figure(data=[go.Bar(x=df.index, y=df['Volume'])])
-                fig.update_layout(title='Trading Volume', xaxis_title='Date', yaxis_title='Volume')
-                st.plotly_chart(fig, use_container_width=True)
+                #st.markdown("---")  # Add a horizontal line for emphasis
+                st.markdown("--------")  # Add a horizontal line for emphasis
 
                 st.subheader('Performance Comparison with Major Indices')
                 comparison_data = pd.DataFrame()  # Initialize as empty DataFrame
@@ -839,14 +840,17 @@ def main():
                         'Technology': 'XLK', 'Healthcare': 'XLV', 'Financials': 'XLF',
                         'Consumer Discretionary': 'XLY', 'Consumer Staples': 'XLP',
                         'Energy': 'XLE', 'Materials': 'XLB', 'Industrials': 'XLI',
-                        'Utilities': 'XLU', 'Real Estate': 'XLRE', 'Communication Services': 'XLC'
+                        'Utilities': 'XLU', 'Real Estate': 'XLRE', 'Communication Services': 'XLC',
+                        'Basic Materials': 'XLB', 'Consumer Goods': 'XLY', 'Financial': 'XLF',
+                        'Healthcare': 'XLV', 'Industries': 'XLI', 'Technology': 'XLK', 'Utilities': 'XLU'
                     }
                     if sector in sector_etfs:
                         st.subheader(f'Performance Comparison with {sector} Sector ETF')
                         sector_etf = sector_etfs[sector]
                         sector_comparison = pd.DataFrame()  # Initialize as empty DataFrame
                         try:
-                            sector_comparison = fetch_comparison_data(f"{ticker} {sector_etf}", start_date, end_date)
+                            #sector_comparison = fetch_comparison_data(f"{ticker} {sector_etf}", start_date, end_date)
+                            sector_comparison = fetch_comparison_data(f"{sector_etf}", start_date, end_date)
                         except Exception as e:
                             st.warning(f"Error fetching sector comparison data: {str(e)}")
 
