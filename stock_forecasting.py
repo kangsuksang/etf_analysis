@@ -59,6 +59,8 @@ popular_tickers = {
     "PLTR": "Palantir Technologies Inc.",
     "PANW": "Palo Alto Networks, Inc.",
     "NOW": "ServiceNow, Inc.",
+    "SQ": "Square, Inc.",
+    "LLY": "Eli Lilly and Company",
 }
 
 # List of S&P 500 tickers
