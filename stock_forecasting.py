@@ -158,6 +158,7 @@ def fetch_comparison_data(ticker, start_date, end_date):
     # Calculate cumulative returns
     return data.pct_change().fillna(0).cumsum()
 
+
 def plot_comparison(df, title):
     fig = go.Figure()
     for column in df.columns:
@@ -477,15 +478,27 @@ def main():
 
         # Update layout
         fig_hist.update_layout(title=f'{ticker} Stock Price - {selected_range}', 
-                               xaxis_title='Date', 
-                               yaxis_title='Price ($)',
-                               xaxis_rangeslider_visible=False,
+                               #xaxis_title='Date', 
+                               #yaxis_title='Price ($)',
+                               xaxis_rangeslider_visible=True,
+                               xaxis_rangeslider_thickness=0.05,
+                               yaxis=dict(  # Ensure yaxis is defined correctly
+                                   title='Price ($)',
+                                   side='left',
+                                   showgrid=True,
+                                   zeroline=True,
+                                   overlaying='y',
+                                   position=0
+                               ),
                                yaxis2=dict(
                                    title='Percent Change (%)',
                                    overlaying='y',
                                    side='right',
-                                   ticklen=0,
-                                   tickcolor='rgba(0,0,0,0)'
+                                   showgrid=False,
+                                   zeroline=True,
+                                   ticklen=5,
+                                   tickcolor='rgba(0,0,0,0)',
+                                   visible=True
                                ))
 
         # Display the chart
@@ -845,19 +858,30 @@ def main():
                         'Healthcare': 'XLV', 'Industries': 'XLI', 'Technology': 'XLK', 'Utilities': 'XLU'
                     }
                     if sector in sector_etfs:
-                        st.subheader(f'Performance Comparison with {sector} Sector ETF')
+                        st.subheader(f'Performance Comparison with {sector} Sector ETF, Other Sectors, and Current Stock')
                         sector_etf = sector_etfs[sector]
-                        sector_comparison = pd.DataFrame()  # Initialize as empty DataFrame
+                        all_sector_comparison = pd.DataFrame()  # Initialize as empty DataFrame
                         try:
-                            #sector_comparison = fetch_comparison_data(f"{ticker} {sector_etf}", start_date, end_date)
-                            sector_comparison = fetch_comparison_data(f"{sector_etf}", start_date, end_date)
+                            # Fetch data for the current stock
+                            current_stock_comparison = fetch_comparison_data(ticker, start_date, end_date)
+                            if not current_stock_comparison.empty:
+                                all_sector_comparison = pd.concat([all_sector_comparison, current_stock_comparison.rename(columns={ticker: info.get('longName', 'N/A')})], axis=1)
+                            # Fetch data for other sectors
+                            for sector_key, sector_value in sector_etfs.items():
+                                if sector_key != sector:  # Exclude the current sector from comparison
+                                    sector_comparison = fetch_comparison_data(f"{sector_value}", start_date, end_date)
+                                    if not sector_comparison.empty:
+                                        all_sector_comparison = pd.concat([all_sector_comparison, sector_comparison.rename(columns={sector_value: sector_key})], axis=1)
                         except Exception as e:
                             st.warning(f"Error fetching sector comparison data: {str(e)}")
 
-                        if not sector_comparison.empty:
-                            st.plotly_chart(plot_comparison(sector_comparison, f'{ticker} vs {sector} Sector ETF ({sector_etf})'), use_container_width=True)
+                        # Remove duplicate items from the plot
+                        all_sector_comparison = all_sector_comparison.loc[:,~all_sector_comparison.columns.duplicated()]
+
+                        if not all_sector_comparison.empty:
+                            st.plotly_chart(plot_comparison(all_sector_comparison, f'{ticker} vs {sector} Sector ETF, Other Sectors'), use_container_width=True)
                         else:
-                            st.warning(f"No sector comparison data available for {sector} in the selected date range.")
+                            st.warning(f"No sector comparison data available for {sector} and other sectors in the selected date range.")
 
                 # Continue with the rest of your analysis here...
 
