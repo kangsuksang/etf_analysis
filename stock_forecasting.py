@@ -533,15 +533,15 @@ def main():
     st.title('📊 Stock Analysis Dashboard')
 
     st.subheader('Stock Selection')
-    st.text("Select a stock from the options below or enter a custom ticker. Left column is for custom ticker entry, right column is for popular stock selection. Left selection supercedes Right")
+    st.text("Select a stock from the options below or enter a custom ticker. (1) custom ticker entry, (2) popular stock, and (3) NASDAQ 100 and (4) S&P 500 selections.\n Left selection supercedes right")
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        custom_ticker = st.text_input('Enter a custom stock ticker:')
+        custom_ticker = st.text_input('(1) Enter a custom stock ticker:')
 
     with col2:
         popular_option = st.selectbox(
-            'Choose a popular stock:',
+            '(2) Choose a popular stock:',
             [''] + list(popular_tickers.keys()),
             format_func=lambda x: f"{x} - {popular_tickers.get(x, '')}" if x else "Select a popular stock"
         )
@@ -549,7 +549,7 @@ def main():
     with col3:
         nasdaq_100 = fetch_nasdaq_100()
         nasdaq_option = st.selectbox(
-            'Choose from NASDAQ 100:',
+            '(3) Choose from NASDAQ 100:',
             [''] + [ticker for ticker in nasdaq_100_tickers.keys() if ticker in nasdaq_100_tickers],
             format_func=lambda x: f"{x} - {nasdaq_100_tickers.get(x, '')}" if x else "Select from NASDAQ 100"
         )
@@ -557,7 +557,7 @@ def main():
     with col4:
         sp_500 = fetch_sp_500()
         sp_option = st.selectbox(
-            'Choose from S&P 500:',
+            '(4) Choose from S&P 500:',
             [''] + [ticker for ticker in sp500_tickers.keys() if ticker in sp500_tickers],
             format_func=lambda x: f"{x} - {sp500_tickers.get(x, '')}" if x else "Select from S&P 500"
         )
@@ -1038,7 +1038,7 @@ def main():
                 # Add candlestick trace to first subplot
                 fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='Price'), row=1, col=1)
                 # Add MA200 trace to first subplot
-                fig.add_trace(go.Scatter(x=df.index, y=df['Close'].rolling(window=200).mean(), mode='lines', name='MA200'), row=1, col=1)
+                fig.add_trace(go.Scatter(x=df.index, y=df['Close'].rolling(window=20).mean(), mode='lines', name='MA20'), row=1, col=1)
 
                 # Add RSI trace to second subplot
                 fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI'), row=2, col=1)
