@@ -569,7 +569,8 @@ def main():
         st.warning("Please select a stock or enter a custom ticker.")
         st.stop()
 
-    st.markdown(f"<h2>**Selected stock: {ticker}**</h2>", unsafe_allow_html=True)
+    info = get_stock_info(ticker)
+    st.markdown(f"<h2>**{ticker} - {info.get('longName', 'N/A')}**</h2>", unsafe_allow_html=True)
     st.markdown("---")  # Add a horizontal line for emphasis
 
     info = get_stock_info(ticker)
